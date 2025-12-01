@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>YouTube Shorts — UI (No Download)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --accent:#06b6d4;
+    --accent-dark:#0b98a8;
+    --danger:#ef4444;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#111}
+  .wrap{max-width:880px;margin:28px auto;padding:18px}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .back{width:44px;height:44px;border-radius:8px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  h1{font-size:20px;margin:0}
+  .card{background:var(--card);border-radius:14px;padding:18px;border:1px solid #eef2f7;box-shadow:0 8px 30px rgba(2,6,23,0.04)}
+  .desc{color:var(--muted);margin-top:6px;margin-bottom:12px}
+  .controls{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap}
+  .url-input{flex:1;min-width:0;padding:12px 14px;border:1px solid #e6e6e6;border-radius:6px;font-size:15px;border-radius:0; /* rectangular as requested */ }
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:2px solid rgba(0,0,0,0.06);
+    background:transparent;color:var(--accent);font-weight:700;cursor:pointer;transition:transform .16s, box-shadow .16s;
+  }
+  .btn:active{transform:translateY(2px) scale(.995)}
+  .btn.primary{
+    background:linear-gradient(90deg,var(--accent) 0%, var(--accent-dark) 100%); color:#fff; border-color:transparent;
+  }
+  .btn.ghost{background:transparent;border-color:rgba(0,0,0,0.06);color:#111}
+  .result-area{display:flex;gap:18px;margin-top:18px;align-items:flex-start;flex-wrap:wrap}
+  .left{flex:1;min-width:260px}
+  .right{width:320px;min-width:260px}
+  .thumbs{display:flex;flex-direction:column;gap:12px}
+  .thumb-card{border-radius:8px;overflow:hidden;border:1px solid #e8e8e8;background:#fafafa}
+  .thumb-card img{display:block;width:100%;height:auto}
+  .meta{margin-top:6px}
+  .meta h3{margin:0;font-size:18px}
+  .meta .sub{color:var(--muted);font-size:13px;margin-top:6px}
+  iframe.preview{width:100%;height:360px;border-radius:8px;border:1px solid #e6e6e6;background:#000}
+  .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .note{font-size:13px;color:var(--muted);margin-top:12px}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#f3f4f6;border:1px solid #e6e6e6;font-size:13px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#fff;padding:18px;border-radius:12px;max-width:520px;width:100%;box-shadow:0 12px 40px rgba(2,6,23,0.3)}
+  .modal h4{margin:0 0 8px 0}
+  .modal p{color:var(--muted);line-height:1.5}
+  .modal .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  @media (max-width:720px){ .right{width:100%} iframe.preview{height:240px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="back" title="Back">←</div>
+      <div>
+        <h1>YouTube Shorts Helper</h1>
+        <div class="desc">Shorts info, preview and download UI (no direct download). Paste Shorts link below.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>
+        <label for="shortUrl" style="font-weight:700">Shorts URL</label>
+        <div class="controls" style="margin-top:8px">
+          <input id="shortUrl" class="url-input" placeholder="Paste YouTube Shorts URL (e.g. https://youtube.com/shorts/VIDEO_ID)" />
+          <button id="getBtn" class="btn primary">Get Info</button>
+          <button id="clearBtn" class="btn ghost">Clear</button>
+        </div>
+      </div>
+
+      <div id="resultWrap" style="display:none" class="result-area">
+        <div class="left">
+          <div class="thumbs" id="thumbList"></div>
+          <div class="note">Tip: If thumbnails don't appear the video may be private or removed.</div>
+        </div>
+
+        <div class="right">
+          <div class="meta" id="metaBox">
+            <h3 id="titleText">Title will appear here</h3>
+            <div class="sub" id="channelText">Channel • details</div>
+            <div style="height:12px"></div>
+          </div>
+
+          <div id="previewBox">
+            <!-- iframe inserted here -->
+          </div>
+
+          <div class="actions">
+            <button id="downloadBtn" class="btn primary">Download (Not available)</button>
+            <button id="copyBtn" class="btn">Copy Video ID</button>
+            <button id="openBtn" class="btn ghost">Open on YouTube</button>
+          </div>
+
+          <div style="margin-top:10px">
+            <div class="chip">Connect your server/API to Download — See settings</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="note">
+        <strong>Important:</strong> This tool does <em>not</em> download Shorts from YouTube. Direct downloads from YouTube violate their Terms of Service. Use the <em>Download</em> button to learn legal options or to connect your own conversion API.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal / Overlay -->
+  <div id="overlay" class="overlay" role="dialog" aria-hidden="true">
+    <div class="modal" role="document">
+      <h4>Direct download not available</h4>
+      <p>
+        Downloading videos directly from YouTube is not allowed by YouTube's Terms of Service.
+        You can:
+      </p>
+      <ul>
+        <li>Use YouTube's official features like Save / Offline (YouTube app / Premium).</li>
+        <li>Connect your own legal server/API that processes user-uploaded video files (not YouTube fetches).</li>
+        <li>Use the <strong>Open on YouTube</strong> button to view the original video and use platform options.</li>
+      </ul>
+      <div class="modal-actions">
+        <button id="modalClose" class="btn">Close</button>
+        <button id="modalHelp" class="btn primary">How to connect API</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+  const getBtn = document.getElementById('getBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const shortUrl = document.getElementById('shortUrl');
+  const resultWrap = document.getElementById('resultWrap');
+  const thumbList = document.getElementById('thumbList');
+  const titleText = document.getElementById('titleText');
+  const channelText = document.getElementById('channelText');
+  const previewBox = document.getElementById('previewBox');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const openBtn = document.getElementById('openBtn');
+  const overlay = document.getElementById('overlay');
+  const modalClose = document.getElementById('modalClose');
+  const modalHelp = document.getElementById('modalHelp');
+
+  function extractId(url){
+    if(!url) return null;
+    try{
+      const u = new URL(url.trim());
+      // /shorts/VIDEO
+      const p = u.pathname;
+      const m = p.match(/shorts\/([a-zA-Z0-9_-]{6,})/);
+      if(m) return m[1];
+      // standard v=
+      if(u.searchParams && u.searchParams.get('v')) return u.searchParams.get('v');
+      // youtu.be/ID
+      const s = p.match(/\/([a-zA-Z0-9_-]{6,})$/);
+      if(s) return s[1];
+    }catch(e){
+      // fallback: maybe user typed only id
+      const trimmed = url.trim();
+      if(/^[a-zA-Z0-9_-]{6,}$/.test(trimmed)) return trimmed;
+    }
+    return null;
+  }
+
+  function buildThumbs(id){
+    const base = `https://i.ytimg.com/vi/${id}/`;
+    return [
+      {name:'maxresdefault', url: base + 'maxresdefault.jpg'},
+      {name:'sddefault', url: base + 'sddefault.jpg'},
+      {name:'hqdefault', url: base + 'hqdefault.jpg'},
+      {name:'mqdefault', url: base + 'mqdefault.jpg'},
+      {name:'default', url: base + 'default.jpg'}
+    ];
+  }
+
+  async function tryLoadImage(url, timeout = 3500){
+    return new Promise(resolve=>{
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      let called = false;
+      img.onload = ()=>{ if(!called){ called=true; resolve(true);} };
+      img.onerror = ()=>{ if(!called){ called=true; resolve(false);} };
+      img.src = url + '?r=' + Math.random();
+      setTimeout(()=>{ if(!called){ called = true; resolve(false); } }, timeout);
+    });
+  }
+
+  async function fetchMeta(id){
+    // Using noembed (public metadata only) - permitted
+    try{
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+      if(!res.ok) return null;
+      const json = await res.json();
+      return json; // contains title, author_name, thumbnail_url etc.
+    }catch(e){
+      return null;
+    }
+  }
+
+  getBtn.addEventListener('click', async ()=>{
+    const url = shortUrl.value.trim();
+    const id = extractId(url);
+    resultWrap.style.display = 'none';
+    thumbList.innerHTML = '';
+    previewBox.innerHTML = '';
+    titleText.textContent = '';
+    channelText.textContent = '';
+    if(!id){ alert('Invalid Shorts URL or ID'); return; }
+    // show loading state
+    getBtn.textContent = 'Loading...'; getBtn.disabled = true;
+    // fetch metadata
+    const meta = await fetchMeta(id);
+    if(meta && meta.title) titleText.textContent = meta.title;
+    else titleText.textContent = 'Shorts video';
+    channelText.textContent = meta && meta.author_name ? meta.author_name : 'Unknown channel';
+    // thumbnails
+    const thumbs = buildThumbs(id);
+    const found = [];
+    for(const t of thumbs){
+      const ok = await tryLoadImage(t.url);
+      if(ok) found.push(t);
+    }
+    if(found.length === 0){
+      thumbList.innerHTML = '<div style="color:#ef4444">No thumbnails found (private or removed video).</div>';
+    }else{
+      found.forEach(item=>{
+        const box = document.createElement('div');
+        box.className = 'thumb-card';
+        const img = document.createElement('img');
+        img.src = item.url;
+        img.alt = item.name;
+        box.appendChild(img);
+        // download / open controls for each thumb (download will fetch blob if needed)
+        const metaDiv = document.createElement('div');
+        metaDiv.style.padding = '8px';
+        const nm = document.createElement('div'); nm.textContent = item.name; nm.style.fontWeight = '700';
+        const linkRow = document.createElement('div'); linkRow.style.display = 'flex'; linkRow.style.gap = '8px'; linkRow.style.marginTop = '8px';
+        const openA = document.createElement('a'); openA.href = item.url; openA.target = '_blank'; openA.rel='noopener noreferrer'; openA.textContent = 'Open'; openA.className = 'btn';
+        const dlBtn = document.createElement('button'); dlBtn.className = 'btn'; dlBtn.textContent = 'Download';
+        // download placeholder: will attempt fetch blob but may be blocked by CORS
+        dlBtn.addEventListener('click', async ()=>{
+          dlBtn.disabled = true; const orig = dlBtn.textContent; dlBtn.textContent = 'Fetching...';
+          try{
+            const r = await fetch(item.url, {mode:'cors'});
+            if(!r.ok) throw new Error('Failed to fetch');
+            const blob = await r.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = blobUrl; a.download = `thumb_${id}_${item.name}.jpg`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(blobUrl);
+          }catch(err){
+            // If fetch fails due to CORS, show friendly modal + guidance
+            overlay.style.display = 'flex';
+            overlay.setAttribute('aria-hidden','false');
+          }finally{ dlBtn.disabled = false; dlBtn.textContent = orig; }
+        });
+        linkRow.appendChild(openA); linkRow.appendChild(dlBtn);
+        metaDiv.appendChild(nm); metaDiv.appendChild(linkRow);
+        box.appendChild(metaDiv);
+        thumbList.appendChild(box);
+      });
+    }
+
+    // insert preview iframe (YouTube embed)
+    const iframe = document.createElement('iframe');
+    iframe.className = 'preview';
+    iframe.src = `https://www.youtube.com/embed/${id}`;
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.frameBorder = '0';
+    previewBox.appendChild(iframe);
+
+    // show result area
+    resultWrap.style.display = 'flex';
+    // enable buttons
+    copyBtn.onclick = ()=>{ navigator.clipboard?.writeText(id).then(()=>alert('Video ID copied')) };
+    openBtn.onclick = ()=>{ window.open(`https://www.youtube.com/watch?v=${id}`,'_blank') };
+    downloadBtn.onclick = ()=>{ overlay.style.display = 'flex'; overlay.setAttribute('aria-hidden','false'); };
+
+    getBtn.disabled = false; getBtn.textContent = 'Get Info';
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    shortUrl.value = ''; resultWrap.style.display = 'none'; thumbList.innerHTML = ''; previewBox.innerHTML = ''; titleText.textContent=''; channelText.textContent='';
+  });
+
+  // modal controls
+  modalClose.addEventListener('click', ()=>{ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); });
+  modalHelp.addEventListener('click', ()=>{ overlay.style.display='none'; overlay.setAttribute('aria-hidden','true'); alert('To connect a legal API: build a server that accepts user-uploaded video files (not YouTube fetches), convert with FFmpeg, and return the processed file. I can provide Node.js/PHP examples.'); });
+
+  // allow enter key
+  shortUrl.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') getBtn.click(); });
+
+})();
+</script>
+</body>
+</html>
